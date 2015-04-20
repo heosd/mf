@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+	<meta charset="UTF-8">
+	<title></title>
+
+	<script src="jquery-1.11.2.min.js"></script>
+</head>
+<body>
+
+<button onclick="onRefresh()">Refresh</button>
+<div id="areaResult">
+	<span>Name : <span id="idName"></span></span><br/>
+	<span>Address : <span id="idAddress"></span></span><br/>
+	<span>Age : <span id="idAge"></span></span><br/>
+	<span>Height : <span id="idHeight"></span></span><br/>
+</div>
+
+<script type="text/javascript">
+	var globalData = {
+		"name": "Jackie",
+		"address": "China",
+		"age": 40,
+		"height": 180
+	};
+
+	function onRefresh() {
+		$("#idName").text(globalData.name);
+		$("#idAddress").text(globalData.address);
+		$("#idAge").text(globalData.age);
+		$("#idHeight").text(globalData.height);
+	}
+
+</script>
+
+</body>
+</html>

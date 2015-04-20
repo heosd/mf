@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+	<meta charset="UTF-8">
+	<title></title>
+
+	<script src="jquery-1.11.2.min.js"></script>
+	<style>
+		table.gridtable {
+			font-family: verdana,arial,sans-serif;
+			font-size:11px;
+			color:#333333;
+			border-width: 1px;
+			border-color: #666666;
+			border-collapse: collapse;
+		}
+		table.gridtable th {
+			border-width: 1px;
+			padding: 8px;
+			border-style: solid;
+			border-color: #666666;
+			background-color: #dedede;
+		}
+		table.gridtable td {
+			border-width: 1px;
+			padding: 8px;
+			border-style: solid;
+			border-color: #666666;
+			background-color: #ffffff;
+		}
+	</style>
+</head>
+<body>
+
+<button onclick="onRefresh()">Refresh</button>
+<table class="gridtable">
+	<thead>
+	<tr>
+		<td>No</td>
+		<td>Name</td>
+		<td>Address</td>
+		<td>Age</td>
+		<td colspan="2">Height</td>
+		<td>Female <input type="checkbox" checked="checked"/></td>
+	</tr>
+	</thead>
+	<tbody id="areaResult">
+	</tbody>
+</table>
+
+<script type="text/javascript">
+	var globalData = null;
+
+	function onRefresh() {
+		request();
+	}
+
+	function request() {
+		// -- Request
+		 $.ajax({
+			type: 'get',
+			dataType: 'json',
+			url: 'api_proto/repeat.json',
+			cache: false
+		}).done(function(json) {
+			 globalData = json;
+			 bind();
+		}).fail(function(data) {
+			 alert("Error");
+		});
+
+	}
+
+	function bind() {
+		if(null == globalData)
+			return;
+
+		var parent = $("#areaResult");
+
+		for(var i = 0; i < globalData.length; i++) {
+			var itemJson = globalData[i];
+			var template = '<tr>' +
+				'<td>' + i + '</td>' +
+				'<td>' + itemJson.name + '</td>' +
+				'<td>' + itemJson.address + '</td>' +
+				'<td>' + itemJson.age + '</td>';
+
+			if(170 < itemJson.height) {
+				template = template + '<td colspan="2">--------</td>';
+			} else {
+				template = template + '<td>--</td><td></td>';
+			}
+
+			var isChecked = '';
+
+			if('female' == itemJson.sex) {
+				isChecked = 'checked="checked"';
+			}
+
+			template = template + '<td><input type="checkbox" ' + isChecked + '/></td>';
+			template = template + '</tr>';
+			parent.append(template);
+		}
+	}
+
+</script>
+
+</body>
+</html>

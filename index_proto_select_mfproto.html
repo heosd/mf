@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+	<meta charset="UTF-8">
+	<script src="jquery-1.11.2.min.js"></script>
+	<script src="mfproto.js"></script>
+	<title></title>
+</head>
+<body>
+<button onclick="onRefresh()">Refresh</button>
+<br/>
+<select id="select1" mf-url="api_proto/select_type.json" mf-template="#templateS1" mf-chain-action="change()">
+	<option value="-1">-- Loading --</option>
+</select>
+<select id="select2" mf-url="api_proto/select_type_#selectedValue#.json" mf-source="#select1" mf-template="#templateS1">
+	<option value="-1">-- Loading --</option>
+</select>
+
+<div id="areaTemplate" style="display: none;">
+	<select id="templateS1">
+		<option mf-condition="key == 'loading'" value="-1">-- Loading now --</option>
+		<option value="{{ value.value }}">{{ value.name }}</option>
+	</select>
+</div>
+</body>
+
+<script type="text/javascript">
+	function onRefresh() {
+		$("#select2").MF_BindSelect();
+		$("#select1").MF_BindRepeat();
+	}
+</script>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+	<meta charset="UTF-8">
+	<script src="jquery-1.11.2.min.js"></script>
+	<title></title>
+</head>
+<body>
+<button onclick="onRefresh()">Refresh</button>
+<br/>
+<select id="select1">
+	<option value="-1">-- Loading --</option>
+</select>
+<select id="select2">
+	<option value="-1">-- Loading --</option>
+</select>
+</body>
+
+<script type="text/javascript">
+	var globalDataSelect1 = null;
+	var globalDataSelect2 = null;
+
+	$("#select1").change(function() {
+		request2();
+	});
+
+	function onRefresh() {
+		request1();
+	}
+
+	function request1() {
+		// -- Request
+		$.ajax({
+			type: 'get',
+			dataType: 'json',
+			url: 'api_proto/select_type.json',
+			cache: false
+		}).done(function(json) {
+			globalDataSelect1 = json;
+			refresh1()
+		}).fail(function(data) {
+			alert("Error");
+		});
+	}
+
+	function createOptionItem(value, name) {
+		return '<option value="' + value + '">' + name + '</option>';
+	}
+
+	function refresh1() {
+		var parent = $("#select1");
+		parent.empty();
+		for(var i = 0; i < globalDataSelect1.length; i++) {
+			var itemJson = globalDataSelect1[i];
+			var item = createOptionItem(itemJson.value, itemJson.name);
+			parent.append(item);
+		}
+
+		// -- Notify
+		parent.change();
+	}
+
+	function request2() {
+		var selectedValue = $("#select1").val();
+		var url = 'api_proto/select_type_' + selectedValue + '.json';
+
+		// -- Request
+		$.ajax({
+			type: 'get',
+			dataType: 'json',
+			url: url,
+			cache: false
+		}).done(function(json) {
+			globalDataSelect2 = json;
+			refresh2()
+		}).fail(function(data) {
+			alert("Error");
+		});
+	}
+
+	function refresh2() {
+		var parent = $("#select2");
+		parent.empty();
+		for(var i = 0; i < globalDataSelect2.length; i++) {
+			var itemJson = globalDataSelect2[i];
+			var item = createOptionItem(itemJson.value, itemJson.name);
+			parent.append(item);
+		}
+	}
+
+</script>
+</html>

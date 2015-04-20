@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+	<meta charset="UTF-8">
+	<title></title>
+
+	<script src="jquery-1.11.2.min.js"></script>
+	<script src="mfproto.js"></script>
+	<style>
+		table.gridtable {
+			font-family: verdana,arial,sans-serif;
+			font-size:11px;
+			color:#333333;
+			border-width: 1px;
+			border-color: #666666;
+			border-collapse: collapse;
+		}
+		table.gridtable th {
+			border-width: 1px;
+			padding: 8px;
+			border-style: solid;
+			border-color: #666666;
+			background-color: #dedede;
+		}
+		table.gridtable td {
+			border-width: 1px;
+			padding: 8px;
+			border-style: solid;
+			border-color: #666666;
+			background-color: #ffffff;
+		}
+	</style>
+</head>
+<body>
+
+<button onclick="onRefresh()">Refresh</button>
+<table class="gridtable">
+	<thead>
+	<tr>
+		<td>No</td>
+		<td>Name</td>
+		<td>Address</td>
+		<td>Age</td>
+		<td colspan="2">Height</td>
+		<td>Female <input type="checkbox" checked="checked"/></td>
+	</tr>
+	</thead>
+	<tbody id="areaResult" mf-template="#template" mf-url="api_proto/repeat.json">
+	</tbody>
+</table>
+
+<table style="display: none;">
+	<tbody id="template">
+	<tr mf-condition="170 < value.height">
+		<td>{{ key }}</td>
+		<td>{{ value.name }}</td>
+		<td>{{ value.address }}</td>
+		<td>{{ value.age }}</td>
+		<td colspan="2">--------</td>
+		<td><input type="checkbox" mf-check="value.sex == 'female'"/> </td>
+	</tr>
+	<tr>
+		<td>{{ key }}</td>
+		<td>{{ value.name }}</td>
+		<td>{{ value.address }}</td>
+		<td>{{ value.age }}</td>
+		<td>--</td>
+		<td></td>
+		<td><input type="checkbox" mf-check="value.sex == 'female'"/> </td>
+	</tr>
+
+	</tbody>
+</table>
+
+<script type="text/javascript">
+	var globalData = null;
+
+	function onRefresh() {
+		$("#areaResult").MF_BindRepeat();
+	}
+</script>
+
+</body>
+</html>
