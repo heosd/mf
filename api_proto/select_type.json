@@ -1,0 +1,7 @@
+[
+	{ "value": 1, "name": "한식"},
+	{ "value": 2, "name": "중식"},
+	{ "value": 3, "name": "양식"},
+	{ "value": 4, "name": "금식"},
+	{ "value": 5, "name": "연식"}
+]
