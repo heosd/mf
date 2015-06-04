@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+	<meta charset="UTF-8">
+	<title></title>
+
+	<script src="jquery-1.11.2.min.js"></script>
+	<script src="mfproto.js"></script>
+	<style>
+		table.gridtable {
+			font-family: verdana,arial,sans-serif;
+			font-size:11px;
+			color:#333333;
+			border-width: 1px;
+			border-color: #666666;
+			border-collapse: collapse;
+		}
+		table.gridtable th {
+			border-width: 1px;
+			padding: 8px;
+			border-style: solid;
+			border-color: #666666;
+			background-color: #dedede;
+		}
+		table.gridtable td {
+			border-width: 1px;
+			padding: 8px;
+			border-style: solid;
+			border-color: #666666;
+			background-color: #ffffff;
+		}
+	</style>
+</head>
+<body>
+
+<button onclick="onRefresh()">Refresh</button>
+<table class="gridtable">
+	<thead>
+	<tr>
+		<td>No</td>
+		<td>Name</td>
+		<td>Address</td>
+		<td>Age</td>
+		<td colspan="2">Height</td>
+		<td>Female <input type="checkbox" checked="checked"/></td>
+		<td>Child Area</td>
+	</tr>
+	</thead>
+	<tbody id="areaResult" mf-template="#template" mf-url="api_proto/repeat_nested.json" mf-callback="cbBind">
+	</tbody>
+</table>
+
+<table style="display: none;">
+	<tbody id="template">
+	<tr mf-condition="170 < value.height">
+		<td>{{ key }}</td>
+		<td>{{ value.name }}</td>
+		<td>{{ value.address }}</td>
+		<td>{{ value.age }}</td>
+		<td colspan="2">--------</td>
+		<td><input type="checkbox" mf-check="value.sex == 'female'"/> </td>
+		<td mf-condition="value.child && 0 < value.child.length">
+			<table mf-template="#template" class="_bind_child" mf-data-source="globalData[{{ key }}].child" mf-derived="{{ key }}"></table>
+		</td>
+	</tr>
+	<tr>
+		<td>{{ @map(key, { 2: 'dos' }) }}</td>
+		<td>{{ value.name }}</td>
+		<td>{{ value.address }}</td>
+		<td>{{ value.age }}</td>
+		<td>--</td>
+		<td></td>
+		<td><input type="checkbox" mf-check="value.sex == 'female'"/> </td>
+		<td mf-condition="key == 3"><span>Only me</span></td>
+		<td mf-condition="value.child && 0 < value.child.length">
+			<table mf-template="#template" class="_bind_child" mf-data-source="globalData[{{ key }}].child" mf-derived="{{ key }}"></table>
+		</td>
+	</tr>
+
+	</tbody>
+</table>
+
+<script type="text/javascript">
+	var globalData = null;
+
+	function onRefresh() {
+		$("#areaResult").MF_BindRepeat();
+	}
+
+	var cbBind = {
+		cbTransfer: function (subType, json, arg2) {
+			if (MF_Request.prototype.TRANSFER_FINISHED == subType) {
+				globalData = json;
+				$("#areaResult ._bind_child").each(function() {
+					$(this).MF_BindRepeat();
+				});
+			}
+		}
+	}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+	<meta charset="UTF-8">
+	<title></title>
+
+	<script src="jquery-1.11.2.min.js"></script>
+	<script src="mfproto.js"></script>
+</head>
+<body>
+
+<button onclick="onRefresh()">Refresh</button>
+
+<p>prevBlock : First page</p>
+<p>nextBlock : End page</p>
+<p>prev : -10 page</p>
+<p>next : +10 page</p>
+<p>pageCurrent : current page, give such a class on it</p>
+<p>page : just normal page</p>
+<p>areaPage : where page, pageCurrent will be inflated in {{ value }} of it</p>
+
+<p id="areaResult" mf-data-source="globalData" mf-template="#template"></p>
+
+<p id="template" style="display: none;">
+	<a mf-condition="key == 'prevBlock'" href="javascript:reloadWithPage('{{ value }}')">First</a>
+	<a mf-condition="key == 'prev'" href="javascript:reloadWithPage('{{ value }}')">Prev 10</a>
+	<span mf-condition="key == 'areaPage'">{{ value }}</span>
+	<a mf-condition="key == 'pageCurrent'" href="javascript:reloadWithPage('{{ value }}')" class="on">{{ value }}</a>
+	<a mf-condition="key == 'page'" href="javascript:reloadWithPage('{{ value }}')">{{ value }}</a>
+	<a mf-condition="key == 'next'" href="javascript:reloadWithPage('{{ value }}')">Next 10</a>
+	<a mf-condition="key == 'nextBlock'" href="javascript:reloadWithPage('{{ value }}')">End</a>
+</p>
+
+<script type="text/javascript">
+	var globalData = {
+		blockSize: 5,
+		page: 1,
+		pageSize: 10,
+		totalCount: 230
+	};
+
+	function onRefresh() {
+		$("#areaResult").MF_BindPagination();
+	}
+
+	function reloadWithPage(page) {
+		alert("Page : " + page);
+	}
+
+</script>
+
+</body>
+</html>
