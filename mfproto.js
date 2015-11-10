@@ -1,10 +1,14 @@
 /**
  * Created by Administrator on 2015-04-13.
  */
+/**
+ * Debug Notice - added "mf-blank-space="true / false", but not tested all case, MF_BindData only has that interface
+ */
 
 var MF_CONST = {
 	attrPrefix: "mf",
 	attrCondition: 'condition',
+	attrBreak: 'break',
 	attrCheck: 'check',
 	bracketS: '\\{\\{',
 	bracketE: '\\}\\}',
@@ -13,6 +17,15 @@ var MF_CONST = {
 	KEY_NO_ITEM: 'zeroItem',
 	KEY_ERROR: 'error',
 
+	// -- Used in pagination
+	KEY_PREV_BLOCK: 'prevBlock',
+	KEY_PREV: 'prev',
+	KEY_AREA_PAGE: 'areaPage',
+	KEY_PAGE_CURRENT: 'pageCurrent',
+	KEY_PAGE: 'page',
+	KEY_NEXT: 'next',
+	KEY_NEXT_BLOCK: 'nextBlock',
+		
 	ATTR_DATA_SOURCE: 'data-source',
 	ATTR_TEMPLATE: 'template',
 	ATTR_SOURCE: 'source',
@@ -22,11 +35,16 @@ var MF_CONST = {
 	ATTR_OPTION_URL: 'url',
 	ATTR_OPTION_CALLBACK: 'callback',
 	ATTR_OPTION_CHAIN_ACTION: 'chain-action',
+	ATTR_OPTION_BLANK_SPACE: 'blank-space',
+	ATTR_OPTION_DERIVED: 'derived',
 
 	AJAX_TYPE: 'get',
 	AJAX_DATA_TYPE: 'json',
 
-	ATTR_CHECK: 'check'
+	ATTR_CHECK: 'check',
+	ATTR_SRC: 'src',
+
+	INNER_FUNCTION_MAP: '#default'
 };
 
 // -- Extend JQuery function to get data attribute, to put 'data-' or whatever later
@@ -58,22 +76,29 @@ var MF_CombineManager = function(startBracket, endBracket) {
 	// -- Expression is regex /{{([ string, number, . ' " [ ] + - # ( ) \s @ = : ? ]+)}}/gm, only those item can be parsed
 	//this.exp = new RegExp(startBracket + '\\s*([\\w\\d\\.\\"\\\'\\[\\]\\+\\-#\\(\\)\\s@=:\\?])+\\s*' + endBracket, 'gm');
 	// -- Changed it to include all character except endBracket 2015/04/19
-	this.exp = new RegExp(startBracket + '\\s*([^' + endBracket + ']*)+\\s*' + endBracket, 'gm');
+	//this.exp = new RegExp(startBracket + '\\s*([^' + endBracket + ']*)+\\s*' + endBracket, 'gm');
+	// -- Changed it to include but lazy way with Question Mark : ?
+	this.exp = new RegExp(startBracket + '\\s*(.*?)\\s*' + endBracket, 'g');
 	this.expS = new RegExp(startBracket + '\\s*');
 	this.expE = new RegExp('\\s*' + endBracket);
-	this.expAttr = new RegExp("\\s*" + MF_CONST.attrPrefix +  "-([^\\s]+)\\s*=\"([^\"]+)\"", 'gm');
-	console.log(this.expAttr);
+	this.expAttr = new RegExp("\\s*" + MF_CONST.attrPrefix +  "-([^\\s]+)\\s*=\"([^\"]+)\"", 'g');
 };
 
 MF_CombineManager.prototype = {
 	listCustomAttr: [
 		{
 			attr: MF_CONST.ATTR_CHECK,
-			evaluateFunction: function(cond, key, value, json, myIndex, innderFuction) {
+			evaluateFunction: function(cond, key, value, json, myIndex, innerFuction) {
 				var result = eval(cond);
 				if(true === result)
 					return ' checked="checked"';
 				return '';
+			}
+		},
+		{
+			attr: MF_CONST.ATTR_SRC,
+			evaluateFunction: function(cond, key, value, json, myIndex, innerFuction) {
+				return ' src="' + cond + '"';
 			}
 		}
 	],
@@ -84,7 +109,7 @@ MF_CombineManager.prototype = {
 	 * item { bracketStr: "{{ value.name }}", evaluateStr : "value.name" or evaluateFunction: function(remain, key, value, json, myIndex, innerFunction), attrRemain: string}
 	 * 1. replace(bracketStr, eval(evaluateStr)
 	 * 2. replace(bracketStr, evaluateFunction(...))
-	 *      where evaluateFunction will return the "String"
+	 *	  where evaluateFunction will return the "String"
 	 **/
 	createCombineList: function(templateStr) {
 		this.exp.lastIndex = 0;
@@ -94,19 +119,7 @@ MF_CombineManager.prototype = {
 
 		var arrResult = [];
 
-		if(templateStrEgg) {
-			for (var i = 0; i < templateStrEgg.length; i++) {
-				var bracketStr = templateStrEgg[i];
-				this.expS.lastIndex = 0;
-				this.expE.lastIndex = 0;
-				var evaluateStr = bracketStr.replace(this.expS, '').replace(this.expE, '');
-				var resultItem = {
-					bracketStr: bracketStr,
-					evaluateStr: evaluateStr
-				};
-				arrResult.push(resultItem);
-			}
-		}
+		// -- Switching the order, custom attribute first
 
 		// -- Doing with custom attribute
 		this.expAttr.lastIndex = 0;
@@ -122,6 +135,21 @@ MF_CombineManager.prototype = {
 				arrResult.push(resultItem);
 			}
 		}
+
+		if(templateStrEgg) {
+			for (var i = 0; i < templateStrEgg.length; i++) {
+				var bracketStr = templateStrEgg[i];
+				this.expS.lastIndex = 0;
+				this.expE.lastIndex = 0;
+				var evaluateStr = bracketStr.replace(this.expS, '').replace(this.expE, '');
+				var resultItem = {
+					bracketStr: bracketStr,
+					evaluateStr: evaluateStr
+				};
+				arrResult.push(resultItem);
+			}
+		}
+
 
 		//			console.log(arrResult);
 
@@ -161,7 +189,8 @@ MF_CombineManager.prototype = {
 			}
 		}
 
-		console.info(attrSeparate + " uncaught, check you spell");
+		// -- some attributes are processed at the outside
+		//console.info(attrSeparate + " uncaught, check you spell");
 		return false;
 	},
 
@@ -173,7 +202,7 @@ MF_CombineManager.prototype = {
 	 * @param value value to evaluate the value
 	 * @returns resultHtmlStr
 	 */
-	combineValue: function(htmlStr, combineList, key, value, json, myIndex, innerFunction) {
+	combineValue: function(htmlStr, combineList, key, value, json, myIndex, innerFunction, derived) {
 		var copiedHtml = htmlStr;
 		for(var i in combineList) {
 			var combine = combineList[i];
@@ -191,7 +220,7 @@ MF_CombineManager.prototype = {
 					evaluateResult = eval(combine.evaluateStr);
 				}
 			} else if(combine.evaluateFunction) {
-				evaluateResult = combine.evaluateFunction(combine.attrRemain, key, value, json, myIndex, innerFunction);
+				evaluateResult = combine.evaluateFunction(combine.attrRemain, key, value, json, myIndex, innerFunction, derived);
 			}
 			copiedHtml = copiedHtml.replace(combine.bracketStr, evaluateResult);
 		}
@@ -272,7 +301,7 @@ MF_TemplateManager.prototype = {
 	 * @param myIndex
 	 * @returns {*}
 	 */
-	findTemplate: function(key, value, json, myIndex) {
+	findTemplate: function(key, value, json, myIndex, derived) {
 		var type = this.templateType;
 
 		if(MF_TemplateManager.prototype.TYPE_INVALID == type) {
@@ -281,12 +310,12 @@ MF_TemplateManager.prototype = {
 
 		// -- Here's delayed template adjusting, since function can not be pre cached, do it right now!
 		if(MF_TemplateManager.prototype.TYPE_FUNCTION == type) {
-			var foundTemplate = this.template(key, value, json, myIndex);
+			var foundTemplate = this.template(key, value, json, myIndex, derived);
 			this.resultCache = MF_TemplateManager.prototype._cacheTemplateString.call(this, foundTemplate);
 		}
 
 		if(this.resultCache) {
-			return MF_TemplateManager.prototype._findTemplateChild.call(this, key, value, json, myIndex);
+			return MF_TemplateManager.prototype._findTemplateChild.call(this, key, value, json, myIndex, derived);
 		}
 
 		console.error("unexpected routine executed. function type couldn't get the cached data(just now) or Object or string couldn't do it when it initialize");
@@ -353,7 +382,7 @@ MF_TemplateManager.prototype = {
 	 * default : 0 index template
 	 * keyword 'key', 'value', 'json' can be used at condition expression
 	 **/
-	_findTemplateChild: function(key, value, json, myIndex) {
+	_findTemplateChild: function(key, value, json, myIndex, derived) {
 		if(!this.resultCache) {
 			console.error("_findTemplateChild failure, resultCache is empty");
 			return false;
@@ -403,7 +432,23 @@ var MF_BindData = function() {
 	this.strValue = 0;
 	this.template = new MF_TemplateManager(this.combine);
 	this.clear = true;
-	this.innerFunc = {};
+	this.blankSpace = true;
+	this.innerFunc = {
+		map: function(arg, obj) {
+			var result = obj[arg];
+			if('string' == typeof result)
+				return result;
+
+			result = obj[MF_CONST.INNER_FUNCTION_MAP];
+			if('string' == typeof result)
+				return result;
+
+			return arg;
+		},
+		LF2BR: function(arg) {
+			return arg.replace(/(?:\r\n|\r|\n)/g, "<br/>");
+		}
+	};
 
 	console.log("Bind is created");
 };
@@ -415,6 +460,13 @@ MF_BindData.prototype = {
 		this.strValue = 0;
 		this.template = this.template.init();
 		this.clear = true;
+		this.blankSpace = true; // -- Default true
+		this.derived = null;
+	},
+
+	// -- Sets adding blank space or not, add - true / false
+	setBlankSpace: function(add) {
+		this.blankSpace = add;
 	},
 
 	setDest: function(JQDest) {
@@ -440,6 +492,11 @@ MF_BindData.prototype = {
 	setClear: function(clear) {
 		this.clear = clear;
 	},
+
+	setDerived: function(derived) {
+		this.derived = derived;
+	},
+
 	addInnerFunc: function(innerFunc) {
 		// -- Merge it
 		$.extend(true, this.innerFunc, innerFunc);
@@ -462,6 +519,12 @@ MF_BindData.prototype = {
 		return this.innerFunc;
 	},
 
+	_getBlankSpace: function() {
+		if(this.blankSpace)
+			return ' ';
+		return '';
+	},
+
 	getDataSourceParsed: function() {
 		var json = this.dataSource;
 		var valueStr = MF_BindData.prototype.getStrValue.call(this);
@@ -470,6 +533,85 @@ MF_BindData.prototype = {
 		}
 
 		return json;
+	},
+
+	/**
+	 * { page: 1, pageSize: 10, blockSize: 5, totalCount: 200 }
+	 * -> { max: x, prev:x, prevBlock: .... }
+	 * @param json
+	 */
+	parsePaginationSource: function(json) {
+		if(!json || 0 == json.totalCount) {
+			var result = {
+				current: 1,
+				size: 10,
+				max: 0
+			};
+
+			return result;
+		}
+
+		var result = {
+			current: json.page,
+			size: json.pageSize
+		};
+
+		var maxPage = Math.ceil(json.totalCount / json.pageSize);
+		var prevPage = json.page - 10;
+		var nextPage = json.page + 10;
+		var startPrint = json.page - json.blockSize;
+		var endPrint = json.page + json.blockSize;
+		var prevPrint = Math.floor((startPrint - json.blockSize + 1) / json.blockSize + 1);
+		var nextPrint = endPrint + 1;
+
+		// -- Prev
+		if(1 > prevPage)
+			prevPage = 1;
+
+		// -- Next
+		if(maxPage < nextPage)
+			nextPage = maxPage;
+
+		// -- Start
+		if(startPrint < 1)
+			startPrint = 1;
+
+		if(startPrint == 1)
+			endPrint = endPrint + (json.blockSize - json.page);
+
+		// -- End
+		if(maxPage < endPrint)
+			endPrint = maxPage;
+
+		if(endPrint == maxPage) {
+			var subStart = json.blockSize - (maxPage - json.page);
+			if(0 < subStart)
+			startPrint = startPrint - subStart;
+			if(startPrint < 1)
+				startPrint = 1;
+		}
+
+		// -- PrevBlock
+		if(prevPrint < 1)
+			prevPrint = 1;
+
+		// -- NextBlock
+		if(maxPage < nextPrint)
+			nextPrint = maxPage;
+
+		// -- first End
+		prevPrint = 1;
+		nextPrint = maxPage;
+
+		result.max = maxPage;
+		result.prev = prevPage;
+		result.next = nextPage;
+		result.start = startPrint;
+		result.end = endPrint;
+		result.prevBlock = prevPrint;
+		result.nextBlock = nextPrint;
+
+		return result;
 	},
 
 	/**
@@ -491,6 +633,11 @@ MF_BindData.prototype = {
 			// -- never change the name 'json' b/c it will be evaluated
 			var json = MF_BindData.prototype.getDataSourceParsed.call(this);
 
+			if(!json) {
+				console.error("invalid data source to loopDataSource");
+				return false;
+			}
+
 			// -- Loop and call back
 			var destChildCount = MF_BindData.prototype.getJQDest.call(this).children().length;
 			for(var i = 0; i < json.length; i++) {
@@ -498,7 +645,7 @@ MF_BindData.prototype = {
 				var value = json[key];
 				var myIndex = destChildCount + i;
 
-				cbWithData(key, value, json, myIndex);
+				cbWithData(key, value, json, myIndex, this.derived);
 			}
 
 			return json.length;
@@ -518,8 +665,76 @@ MF_BindData.prototype = {
 		return this.clear;
 	},
 
-	appendParent: function(anything) {
-		this.JQDest.append(anything);
+	appendParent: function(anything, key, value, json, myIndex, innerFunc, derived) {
+		var resultJQObj = MF_BindData.prototype.processCustomAttribute.call(this, anything, key, value, json, myIndex, innerFunc, derived);
+
+		// -- If break = true do not append it
+		var theBreak = resultJQObj.MF_GetDataAttr(MF_CONST.attrBreak);
+		if(theBreak) {
+			theBreak = eval(theBreak);
+		}
+
+		if(true !== theBreak) {
+			this.JQDest.append(resultJQObj);
+			// -- Give a space when you append, b/c it is only object they do not have any blank space
+			if (this.blankSpace) {
+				this.JQDest.append(this._getBlankSpace());
+			}
+		}
+	},
+
+	adjustTemplate: function(key, value, json, myIndex, innerFunc, derived) {
+		var templateFound = this.template.findTemplate(key, value, json, myIndex, derived);
+
+		if('string' == typeof templateFound) {
+			// -- plain text or function type
+			return templateFound;
+		} else if('object' == typeof templateFound) {
+			// -- Plural template, plural template caching and appending verified
+			if(0 < templateFound.length) {
+				var resultAll = "";
+				for(var i = 0; i < templateFound.length; i++) {
+					var resultHtml = this.combine.combineValue(templateFound[i].template, templateFound[i].combineList, key, value, json, myIndex, innerFunc, derived);
+					resultAll = resultAll + resultHtml;
+				}
+				return resultAll;
+			} else {
+				// -- Singular template
+				// -- Cached object type, need to combine it again
+				var resultHtml = this.combine.combineValue(templateFound.template, templateFound.combineList, key, value, json, myIndex, innerFunc, derived);
+				return resultHtml;
+			}
+		} else {
+			console.info("No Template found its usually error with template setting!");
+		}
+	},
+
+	findTemplateAppendToParent: function(key, value, json, myIndex, innerFunc, derived) {
+		var resultTemplate = this.adjustTemplate(key, value, json, myIndex, innerFunc, derived);
+		MF_BindData.prototype.appendParent.call(this, resultTemplate, key, value, json, myIndex, innerFunc, derived);
+	},
+
+	/**
+	 * children who has custom attributes like mf-condition
+	 * this is different from mf-check, it is replacement but this is manipulation
+	 * @param anythingStr
+	 */
+	// -- Only for mf-condition!! not expandable
+	processCustomAttribute: function(anythingStr, key, value, json, myIndex, innerFunc, derived) {
+		var obj = $(anythingStr);
+		// -- only Just mf-condition now
+		var attr = MF_CONST.attrPrefix + "-" + MF_CONST.attrCondition;
+		var attrSelector = "[" + attr + "]";
+		obj.find(attrSelector).each(function() {
+			var e = $(this);
+			var remain = e.attr(attr);
+			var evaluatedCondition = eval(remain);
+			if(true !== evaluatedCondition) {
+				e.remove();
+			}
+		});
+
+		return obj;
 	},
 
 	bindSimple: function(JQDest, value) {
@@ -556,29 +771,9 @@ MF_BindData.prototype = {
 
 		// -- Starts
 		MF_BindData.prototype.clearDestIfNecessary.call(this);
-		MF_BindData.prototype.loopDataSource.call(this, function(key, value, json, myIndex) {
+		MF_BindData.prototype.loopDataSource.call(this, function(key, value, json, myIndex, derived) {
 			// -- found Template is array type, always function
-			var templateFound = self.template.findTemplate(key, value, json, myIndex);
-
-			if('string' == typeof templateFound) {
-				// -- plain text or function type
-				MF_BindData.prototype.appendParent.call(self, templateFound);
-			} else if('object' == typeof templateFound) {
-				// -- Plural template
-				if(0 < templateFound.length) {
-					for(var i = 0; i < templateFound.length; i++) {
-						var resultHtml = self.combine.combineValue(templateFound[i].template, templateFound[i].combineList, key, value, json, myIndex, self.innerFunc);
-						MF_BindData.prototype.appendParent.call(self, resultHtml);
-					}
-				} else {
-					// -- Singular template
-					// -- Cached object type, need to combine it again
-					var resultHtml = self.combine.combineValue(templateFound.template, templateFound.combineList, key, value, json, myIndex, self.innerFunc);
-					MF_BindData.prototype.appendParent.call(self, resultHtml);
-				}
-			} else {
-				console.info("No Template found its usually error with template setting!");
-			}
+			self.findTemplateAppendToParent(key, value, json, myIndex, self.innerFunc, derived);
 		});
 	},
 
@@ -617,6 +812,64 @@ MF_BindData.prototype = {
 			// -- Cached object type, need to combine it again
 			var resultHtml = this.combine.combineValue(templateFound.template, templateFound.combineList, requestKey, { msg: requestKey }, [], requestKey, this.innerFunc);
 			MF_BindData.prototype.appendParent.call(this, resultHtml);
+		}
+	},
+
+	bindPagination: function(JQDest, dataSource, template) {
+		if(JQDest)
+			MF_BindData.prototype.setDest.call(this, JQDest);
+		if(dataSource)
+			MF_BindData.prototype.setDataSource.call(this, dataSource);
+		if(template)
+			MF_BindData.prototype.setTemplate.call(this, template);
+
+		// -- Starts
+		this.dataSource = MF_BindData.prototype.parsePaginationSource(this.dataSource);
+		MF_BindData.prototype.clearDestIfNecessary.call(this);
+
+		var tAreaPage = this.template.findTemplate(MF_CONST.KEY_AREA_PAGE, 0, 0, 0);
+
+		if(!this.dataSource || !this.dataSource.max || 0 == this.dataSource.max) {
+			// -- Invalid approach, show the First
+
+			this.findTemplateAppendToParent(MF_CONST.KEY_PREV_BLOCK, 1, this.dataSource, 0, this.innerFunc);
+			this.findTemplateAppendToParent(MF_CONST.KEY_PREV, 1, this.dataSource, 0, this.innerFunc);
+
+			var pages = "";
+			pages = pages + this.adjustTemplate(MF_CONST.KEY_PAGE, 1, this.dataSource, 0, this.innerFunc) + this._getBlankSpace();
+			if(tAreaPage) {
+				var areaPage = this.adjustTemplate(MF_CONST.KEY_AREA_PAGE, pages, this.dataSource, 0, this.innerFunc);
+				MF_BindData.prototype.appendParent.call(this, areaPage, MF_CONST.KEY_AREA_PAGE, pages, this.dataSource, 0, this.innerFunc);
+			} else {
+				MF_BindData.prototype.appendParent.call(this, pages, MF_CONST.KEY_AREA_PAGE, pages, this.dataSource, 0, this.innerFunc);
+			}
+
+			this.findTemplateAppendToParent(MF_CONST.KEY_NEXT, 1, this.dataSource, 0, this.innerFunc);
+			this.findTemplateAppendToParent(MF_CONST.KEY_NEXT_BLOCK, 1, this.dataSource, 0, this.innerFunc);
+		} else {
+			this.findTemplateAppendToParent(MF_CONST.KEY_PREV_BLOCK, this.dataSource.prevBlock, this.dataSource, 0, this.innerFunc);
+			this.findTemplateAppendToParent(MF_CONST.KEY_PREV, this.dataSource.prev, this.dataSource, 0, this.innerFunc);
+
+			// -- Pages to HTML string
+			var pages = "";
+			for(var i = this.dataSource.start; i <= this.dataSource.end; i++) {
+				if(this.dataSource.current == i) {
+					pages = pages + this.adjustTemplate(MF_CONST.KEY_PAGE_CURRENT, i, this.dataSource, 0, this.innerFunc) + this._getBlankSpace();
+				} else {
+					pages = pages + this.adjustTemplate(MF_CONST.KEY_PAGE, i, this.dataSource, 0, this.innerFunc) + this._getBlankSpace();
+				}
+			}
+			// -- If it has parent like <span> or <div> to surround the pages, adjust it and make it jquery object
+			if(tAreaPage) {
+				var areaPage = this.adjustTemplate(MF_CONST.KEY_AREA_PAGE, pages, this.dataSource, 0, this.innerFunc);
+				MF_BindData.prototype.appendParent.call(this, areaPage, MF_CONST.KEY_AREA_PAGE, pages, this.dataSource, 0, this.innerFunc);
+			} else {
+				MF_BindData.prototype.appendParent.call(this, pages, MF_CONST.KEY_AREA_PAGE, pages, this.dataSource, 0, this.innerFunc);
+			}
+
+			this.findTemplateAppendToParent(MF_CONST.KEY_NEXT, this.dataSource.next, this.dataSource, 0, this.innerFunc);
+			this.findTemplateAppendToParent(MF_CONST.KEY_NEXT_BLOCK, this.dataSource.nextBlock, this.dataSource, 0, this.innerFunc);
+
 		}
 	}
 };
@@ -854,7 +1107,7 @@ MF_BindDataRequest.prototype = {
 							self.innerBinder.setDataSource(list);
 							var tempListToCount = self.innerBinder.getDataSourceParsed();
 							// -- Set data source temporary to parse with value str
-							if(0 == tempListToCount.length)
+							if(!tempListToCount || 0 == tempListToCount.length)
 								self.innerBinder.bindError(false, MF_BindDataRequest.prototype.KEY_NO_ITEM, false);
 						}
 					}
@@ -1013,6 +1266,8 @@ var MF_BasicHelper = function(binder, JQObject) {
 	var optionClear = JQObject.MF_GetDataAttr(MF_BasicHelper.prototype.ATTR_OPTION_CLEAR);
 	var optionFunc = JQObject.MF_GetDataAttr(MF_BasicHelper.prototype.ATTR_OPTION_FUNCTION);
 	var optionValueStr = JQObject.MF_GetDataAttr(MF_BasicHelper.prototype.ATTR_OPTION_VALUE_STR);
+	var optionBlankSpace = JQObject.MF_GetDataAttr(MF_BasicHelper.prototype.ATTR_OPTION_BLANK_SPACE);
+	var optionDerived = JQObject.MF_GetDataAttr(MF_BasicHelper.prototype.ATTR_OPTION_DERIVED);
 
 	if(optionTemplate) {
 		optionTemplate = $(optionTemplate);
@@ -1032,6 +1287,15 @@ var MF_BasicHelper = function(binder, JQObject) {
 	if(optionValueStr) {
 		binder.setValueStr(optionValueStr);
 	}
+
+	if(optionBlankSpace) {
+		optionBlankSpace = eval(optionBlankSpace);
+		binder.setBlankSpace(optionBlankSpace);
+	}
+
+	if(optionDerived) {
+		binder.setDerived(optionDerived);
+	}
 };
 
 MF_BasicHelper.prototype = {
@@ -1043,7 +1307,8 @@ MF_BasicHelper.prototype = {
 	ATTR_OPTION_VALUE_STR: MF_CONST.ATTR_OPTION_VALUE_STR,
 	ATTR_OPTION_URL: MF_CONST.ATTR_OPTION_URL,
 	ATTR_OPTION_CALLBACK: MF_CONST.ATTR_OPTION_CALLBACK,
-	ATTR_OPTION_CHAIN_ACTION: MF_CONST.ATTR_OPTION_CHAIN_ACTION
+	ATTR_OPTION_CHAIN_ACTION: MF_CONST.ATTR_OPTION_CHAIN_ACTION,
+	ATTR_OPTION_DERIVED: MF_CONST.ATTR_OPTION_DERIVED,
 };
 
 var MF_BindDataHelper = function(JQObject) {
@@ -1056,7 +1321,7 @@ var MF_BindDataHelper = function(JQObject) {
 	// -- Check 'url' for judge if its for request or normal
 	var binder = null;
 	var url = JQObject.MF_GetDataAttr(MF_BasicHelper.prototype.ATTR_OPTION_URL);
-	var dataSource = JQObject.MF_GetDataAttr(MF_BasicHelper.prototype.ATTR_DATA_SOURCE);
+	var $dataSource = JQObject.MF_GetDataAttr(MF_BasicHelper.prototype.ATTR_DATA_SOURCE);
 
 	// -- Note MF_BindDataRequest has 'b' which is MF_BindData so Helper can do it correctly
 	if(url) {
@@ -1076,10 +1341,10 @@ var MF_BindDataHelper = function(JQObject) {
 			optionCallback = eval(optionCallback);
 			binder.setCallback(optionCallback);
 		}
-	} else if(dataSource){
+	} else if($dataSource){
 		binder = new MF_BindData();
-		dataSource = eval(dataSource);
-		binder.setDataSource(dataSource);
+		$dataSource = eval($dataSource);
+		binder.setDataSource($dataSource);
 		binder.setDest(JQObject);
 		MF_BasicHelper(binder, JQObject);
 	} else {
@@ -1143,6 +1408,33 @@ var MF_SelectChainHelper = function(JQObject) {
 	return binder;
 };
 
+var MF_BindPaginationHelper = function(JQObject) {
+	// -- Check JQObjest - destination which is most important!
+	if(!JQObject instanceof jQuery) {
+		console.error("Invalid argument with MF_BindPaginationHelper that should be jQuery object");
+		return false;
+	}
+
+	// -- Check 'url' for judge if its for request or normal
+	var binder = null;
+	var $dataSource = JQObject.MF_GetDataAttr(MF_BasicHelper.prototype.ATTR_DATA_SOURCE);
+
+	// -- Note MF_BindDataRequest has 'b' which is MF_BindData so Helper can do it correctly
+	if($dataSource){
+		binder = new MF_BindData();
+		$dataSource = eval($dataSource);
+		binder.setDataSource($dataSource);
+		binder.setDest(JQObject);
+		MF_BasicHelper(binder, JQObject);
+	} else {
+		console.error("You should datasource to bind pagination");
+		return false;
+	}
+
+	return binder;
+};
+
+
 // -- Extend JQuery function to set it right away! returns each "BINDER". not a jquery object
 $.fn.MF_BindSimple = function() {
 	var binder = MF_BindDataHelper(this);
@@ -1161,3 +1453,10 @@ $.fn.MF_BindSelect = function() {
 	binder.setSecondary();
 	return binder;
 };
+
+$.fn.MF_BindPagination = function() {
+	var binder = MF_BindPaginationHelper(this);
+	binder.bindPagination();
+	return binder;
+};
+
